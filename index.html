@@ -1,0 +1,238 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>众图科技AI客服</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .chat-float-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-image: url('https://coze-coding-project.tos.coze.site/coze_storage_7641538494636179456/kefu-icon_81939d3f.png?sign=2094561508-6b03908ac3-0-854d56b6553075225c311671d3886fc3704d7b1c030cefaa77bbba0e1136e11a');
+            background-size: cover;
+            background-position: center;
+            background-color: #fff;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            z-index: 9999;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .chat-float-btn:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(0,0,0,0.35); }
+        .chat-window {
+            position: fixed;
+            bottom: 110px;
+            right: 30px;
+            width: 380px;
+            height: 550px;
+            max-width: calc(100vw - 40px);
+            max-height: calc(100vh - 160px);
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.25);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 9998;
+            animation: slideUp 0.3s ease;
+        }
+        .chat-window.open { display: flex; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-header { background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); color: white; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        .chat-header .bot-avatar { width: 44px; height: 44px; border-radius: 50%; background-image: url('https://coze-coding-project.tos.coze.site/coze_storage_7641538494636179456/kefu-icon_81939d3f.png?sign=2094561508-6b03908ac3-0-854d56b6553075225c311671d3886fc3704d7b1c030cefaa77bbba0e1136e11a'); background-size: cover; background-position: center; }
+        .chat-header .info { flex: 1; }
+        .chat-header .name { font-size: 16px; font-weight: 600; }
+        .chat-header .status { font-size: 12px; opacity: 0.9; }
+        .chat-header .close-btn { width: 32px; height: 32px; border: none; background: rgba(255,255,255,0.2); border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; background: #f5f7fa; }
+        .message { margin-bottom: 16px; display: flex; gap: 10px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { flex-direction: row-reverse; }
+        .message-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .message.bot .message-avatar { background-image: url('https://coze-coding-project.tos.coze.site/coze_storage_7641538494636179456/kefu-icon_81939d3f.png?sign=2094561508-6b03908ac3-0-854d56b6553075225c311671d3886fc3704d7b1c030cefaa77bbba0e1136e11a'); background-size: cover; background-position: center; }
+        .message.user .message-avatar { background: #4CAF50; color: white; font-size: 12px; }
+        .message-content { max-width: 75%; padding: 12px 16px; border-radius: 16px; line-height: 1.6; font-size: 14px; word-break: break-word; white-space: pre-wrap; }
+        .message.bot .message-content { background: white; border-bottom-left-radius: 4px; }
+        .message.user .message-content { background: #1E88E5; color: white; border-bottom-right-radius: 4px; }
+        .typing-dots { display: flex; gap: 4px; }
+        .typing-dots span { width: 8px; height: 8px; background: #ccc; border-radius: 50%; animation: bounce 1.4s infinite; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
+        .input-area { padding: 16px 20px; background: white; border-top: 1px solid #eee; display: flex; gap: 12px; }
+        .input-wrapper { flex: 1; }
+        .input-wrapper input { width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 14px; outline: none; transition: border-color 0.3s; }
+        .input-wrapper input:focus { border-color: #1E88E5; }
+        .send-btn { width: 48px; height: 48px; background: #1E88E5; border: none; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.3s, transform 0.2s; }
+        .send-btn:hover { background: #1565C0; }
+        .send-btn:active { transform: scale(0.95); }
+        .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .quick-replies { padding: 0 20px 12px; display: flex; gap: 8px; flex-wrap: wrap; background: #f5f7fa; }
+        .quick-reply { padding: 8px 14px; background: white; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 13px; color: #666; cursor: pointer; transition: all 0.2s; }
+        .quick-reply:hover { background: #1E88E5; color: white; border-color: #1E88E5; }
+        .transfer-btn { margin: 0 20px 12px; padding: 12px; background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%); border: none; border-radius: 12px; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s; }
+        .transfer-btn:hover { transform: scale(1.02); }
+        @media (max-width: 480px) { .chat-window { width: calc(100vw - 20px); height: calc(100vh - 120px); bottom: 90px; right: 10px; } .chat-float-btn { width: 56px; height: 56px; bottom: 20px; right: 20px; } }
+    </style>
+</head>
+<body>
+    <button class="chat-float-btn" onclick="toggleChat()"></button>
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <div class="bot-avatar"></div>
+            <div class="info"><div class="name">众图科技AI客服</div><div class="status">● 在线</div></div>
+            <button class="close-btn" onclick="toggleChat()">×</button>
+        </div>
+        <div class="messages" id="messages">
+            <div class="message bot"><div class="message-avatar"></div><div class="message-content">您好！我是众图科技AI客服，请问有什么可以帮助您的？</div></div>
+        </div>
+        <div class="quick-replies">
+            <button class="quick-reply" onclick="sendQuickReply('AI结构优化是什么？')">AI结构优化</button>
+            <button class="quick-reply" onclick="sendQuickReply('服务流程是怎样的？')">服务流程</button>
+            <button class="quick-reply" onclick="sendQuickReply('转人工')">转人工</button>
+        </div>
+        <button class="transfer-btn" onclick="transferToHuman()">📞 转人工客服</button>
+        <div class="input-area">
+            <div class="input-wrapper"><input type="text" id="userInput" placeholder="输入您的问题..." onkeypress="handleKeyPress(event)"></div>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+        </div>
+    </div>
+    <script>
+        // ⚠️ 部署后替换为您的 Vercel 域名，例如：https://zhongtu-chat-proxy.vercel.app
+        const API_BASE = window.location.origin;
+
+        let isLoading = false;
+        let sessionId = 'session_' + Date.now();
+        let chatOpen = false;
+
+        function toggleChat() { 
+            chatOpen = !chatOpen; 
+            document.getElementById('chatWindow').classList.toggle('open', chatOpen); 
+        }
+
+        function scrollToBottom() { 
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight; 
+        }
+
+        function addMessage(role, content) { 
+            const div = document.createElement('div'); 
+            div.className = 'message ' + role; 
+            div.innerHTML = '<div class="message-avatar"></div><div class="message-content">' + escapeHtml(content) + '</div>'; 
+            document.getElementById('messages').appendChild(div); 
+            scrollToBottom(); 
+        }
+
+        function showTyping() { 
+            const div = document.createElement('div'); 
+            div.className = 'message bot'; 
+            div.id = 'typingIndicator'; 
+            div.innerHTML = '<div class="message-avatar"></div><div class="message-content"><div class="typing-dots"><span></span><span></span><span></span></div></div>'; 
+            document.getElementById('messages').appendChild(div); 
+            scrollToBottom(); 
+        }
+
+        function hideTyping() { 
+            const t = document.getElementById('typingIndicator'); 
+            if (t) t.remove(); 
+        }
+
+        function escapeHtml(t) { 
+            const d = document.createElement('div'); 
+            d.textContent = t; 
+            return d.innerHTML; 
+        }
+
+        function transferToHuman() { 
+            window.open('https://work.weixin.qq.com/kfid/kfc3eb83029ad298808', '_blank'); 
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const msg = input.value.trim();
+            if (!msg || isLoading) return;
+
+            isLoading = true;
+            input.value = '';
+            document.getElementById('sendBtn').disabled = true;
+
+            addMessage('user', msg);
+            showTyping();
+
+            try {
+                const response = await fetch(API_BASE + '/api/chat', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: msg,
+                        type: 'query',
+                        role: 'user',
+                        session_id: sessionId
+                    })
+                });
+
+                if (!response.ok) throw new Error('请求失败');
+
+                hideTyping();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let botMsg = '';
+
+                const botDiv = document.createElement('div');
+                botDiv.className = 'message bot';
+                botDiv.innerHTML = '<div class="message-avatar"></div><div class="message-content"></div>';
+                document.getElementById('messages').appendChild(botDiv);
+                const contentDiv = botDiv.querySelector('.message-content');
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value);
+                    for (const line of chunk.split('\n')) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.type === 'answer' && data.content?.answer) {
+                                    botMsg += data.content.answer;
+                                    contentDiv.textContent = botMsg;
+                                    scrollToBottom();
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+
+                if (!botMsg) contentDiv.textContent = '抱歉，服务暂时不可用，请稍后再试。';
+
+            } catch (e) { 
+                console.error('Error:', e);
+                hideTyping(); 
+                addMessage('bot', '网络连接失败，请稍后再试。'); 
+            }
+
+            isLoading = false;
+            document.getElementById('sendBtn').disabled = false;
+            scrollToBottom();
+        }
+
+        function sendQuickReply(m) { 
+            document.getElementById('userInput').value = m; 
+            sendMessage(); 
+        }
+
+        function handleKeyPress(e) { 
+            if (e.key === 'Enter') sendMessage(); 
+        }
+
+        document.getElementById('userInput').focus();
+    </script>
+</body>
+</html>
+```
